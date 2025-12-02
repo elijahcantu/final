@@ -49,6 +49,14 @@ Deployment
 		- React: https://<YOUR_GITHUB_USERNAME>.github.io/final/react-color-picker/
 	- To enable this workflow, push your `main` branch to your GitHub remote repository and verify Actions are enabled for the repo. You do not need to store any additional secrets; the Action uses the repository's `GITHUB_TOKEN`.
 
+	Troubleshooting: Permission denied when deploying
+	- If the action fails during the Deploy step with a permission error (for example: "Permission denied to github-actions[bot] or 403"), do the following:
+		1. Go to your repository on GitHub -> Settings -> Actions -> General -> "Workflow permissions" and ensure it is set to "Read and write permissions" (this gives the `GITHUB_TOKEN` permission to push to branches).
+		2. If your organization locks down actions or the repository settings prevent workflows from pushing, create a Personal Access Token (PAT) with the `repo` scope and add it to repository secrets as `GH_PAGES_TOKEN`. The workflow already tries to use this secret if present.
+			 - To create a PAT: go to https://github.com/settings/tokens -> Generate new token -> Select `repo` (full control of private repositories) -> Generate token and copy it.
+			 - Add token to repository secrets: GitHub repo -> Settings -> Secrets -> Actions -> New Repository Secret -> Name: `GH_PAGES_TOKEN` -> Value: `<your token>`.
+		3. If `gh-pages` or `main` branch protection is enabled and disallows pushing from Actions, either disable that protection for `gh-pages` or create an allow-list for GitHub Actions in branch protection rules so the action can push to `gh-pages`.
+
 - Netlify: Connect repo and set build commands (React: `npm run build`, publish `dist`; Vanilla: just host static assets or use `index.html` root).
 
 Author: Elijah Cantu (e.cantu)

@@ -1,8 +1,12 @@
+
 name: Deploy to GitHub Pages
+permissions:
+  contents: write
 
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -10,6 +14,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # ensure the default github token is persisted in the workspace to allow pushes
+          persist-credentials: true
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -35,6 +42,7 @@ jobs:
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Use a personal access token secret if you provide one, otherwise fall back to GITHUB_TOKEN
+          github_token: ${{ secrets.GH_PAGES_TOKEN || secrets.GITHUB_TOKEN }}
           publish_dir: ./gh-pages
           publish_branch: gh-pages
