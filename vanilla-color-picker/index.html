@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Color Picker — Vanilla JS — Elijah (e.cantu)</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header>
+  <h1>Color Picker</h1>
+  <div class="author">Elijah Cantu (<span class="uniqname">e.cantu</span>)</div>
+</header>
+<main class="picker">
+  <section class="left">
+    <div class="canvas-wrap">
+      <canvas id="sv-canvas" width="300" height="300" aria-label="Saturation and Value color picking area" tabindex="0"></canvas>
+      <div id="sv-cursor" class="cursor" aria-hidden="true"></div>
+    </div>
+    <div class="hue-wrap">
+      <input id="hue-range" type="range" min="0" max="360" value="0" aria-label="Hue slider">
+    </div>
+  </section>
+  <aside class="right">
+    <div class="preview">
+      <div id="color-preview" class="preview-box" aria-hidden="true"></div>
+      <div class="codes">
+        <label>HEX <input id="hex-input" type="text" aria-label="HEX input" value="#FF0000"></label>
+        <button id="copy-hex">Copy</button>
+        <label>RGB <input id="rgb-input" type="text" aria-label="RGB input" value="rgb(255, 0, 0)"></label>
+        <button id="copy-rgb">Copy</button>
+        <label>HSL <input id="hsl-input" type="text" aria-label="HSL input" value="hsl(0, 100%, 50%)"></label>
+        <button id="copy-hsl">Copy</button>
+      </div>
+    </div>
+
+    <div class="palettes">
+      <h3>Palettes</h3>
+      <div id="palette-list" class="palette-list"></div>
+    </div>
+
+    <div class="contrast">
+      <h3>Contrast</h3>
+      <div id="contrast-info">—</div>
+    </div>
+
+    <div class="history">
+      <h3>History</h3>
+      <div id="history-list" class="history-list"></div>
+    </div>
+  </aside>
+</main>
+<script src="script.js"></script>
+</body>
+</html>

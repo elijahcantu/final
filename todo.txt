@@ -1,0 +1,464 @@
+Color Picker Re-Implementation Plan
+Source & Analysis
+URL: https://htmlcolorcodes.com/color-picker/
+Date retrieved: 2025-12-02
+
+Overview
+- The page provides an interactive color picker that supports selecting color visually (click+drag), showing color codes in HEX/RGB/HSL/HSV/OKLCH, provides palette (harmonies) suggestions, explains color theory content, and includes accessible information (WCAG/contrast guidance).
+- Core interactive elements to replicate:
+  - Color gradient/spectrum area (S/V plane) for selecting saturation and brightness/value
+  - Vertical hue slider for selecting base hue
+  - Inputs and displays for color codes (HEX, RGB, HSL, HSV, optionally OKLCH)
+  - Copy-to-clipboard for color values
+  - Suggested palettes for harmonies (complementary, triadic, analogous, tetradic, monochromatic)
+  - Color preview/preview area
+  - Optional: saved swatches or history (use localStorage)
+  - Accessibility and contrast guidance (WCAG score or indicators)
+
+Explicit Requirements (Assignment)
+- Build two separate apps (Vanilla JS and React) and deploy both (GitHub Pages or Netlify)
+- Each app must show your name or uniqname visibly
+- Each app must include at least one interactive feature using concepts from class (e.g., DOM event handling, canvas, state management, color conversions)
+
+Deliverable for Claude: Implement Plan
+This file provides a detailed, actionable plan for building both apps and includes recommended code structure, algorithms, UX behaviors, and deployment steps.
+
+----------------------------
+Detailed Component & UX Analysis
+----------------------------
+1) Color Picking UI
+- Two main controls:
+  A) Color Area (Saturation / Value plane) — usually displayed as a square with current hue applied; clicking the area picks S (horizontal axis) and V (vertical axis)
+  B) Hue Slider — vertical (or horizontal) slider representing 0–360° hue; changing hue updates the color area background
+- Interactions:
+  - Click and drag to select color; update preview and code fields live
+  - Touch support for mobile
+  - keyboard support for sliders and inputs (arrow keys to change hue/offset values)
+
+2) Color Code Inputs & Display
+- Inputs for HEX (#RRGGBB), RGB (r,g,b), HSL (h,s,l), and HSV (h,s,v) — keep them synced
+- Text + copy button (clipboard) for each code
+- Parsing: Allow user to paste/edit a hex or rgb string to set color
+
+3) Palette suggestions & color harmonies
+- Compute palettes from current hue and display swatches
+- Include button to copy palette codes or add to favorites
+- Harmonic formula examples:
+  - Complementary: H + 180
+  - Triadic: H +/- 120
+  - Analogous: H +/- 30
+  - Tetradic: H + 180 & H +/- 60
+  - Monochromatic: vary L or V
+
+4) Shades, tints, and tones
+- Show computed tints/shades by mixing base color with white (increase lightness) or black (decrease lightness), or by changing V in HSV
+
+5) Contrast & WCAG
+- Compute contrast ratio between selected color and white/black using relative luminance formula
+- Show accessibility badges (pass/fail) for WCAG AA/AAA for text/graphical UI
+
+6) Extras (Optional):
+- Eye dropper or image color picker (separate page on site) — optional but nice
+- History of picked colors using localStorage
+- Save favorite swatches
+
+----------------------------
+Implementation Guide: Vanilla JS
+----------------------------
+Folder structure suggestion:
+- / (root)
+  - index.html
+  - style.css
+  - script.js
+  - /assets (optional images)
+
+index.html
+- Build semantic HTML: header with app name + uniqname, main section with color area, hue slider, code inputs, swatches/palette panel, footer with attribution
+- Use aria-labels and role attributes for accessibility
+
+Style (CSS)
+- Responsive layout: two columns: left (picker & hue slider) and right (controls & palette)
+- Use CSS variables for app colors; theme light/dark toggles optional
+- For hue slider: use <input type="range"> rotated via transform: rotate(-90deg) for vertical feel, OR build a custom slider with a canvas and drag events
+
+script.js - Core sections
+1) Color model & conversions
+- Implement or include functions:
+  - HSV <-> RGB
+  - RGB <-> HEX
+  - RGB <-> HSL (or HSL conversion if you want it displayed)
+  - For OKLCH: suggest using a small color lib if needed (like "culori") or omit if too heavy
+- Provide copy/paste parsing logic (accept '#RRGGBB' and 'rgb(r,g,b)')
+
+2) Canvas rendering for color area
+- Use a single <canvas> sized to control area; draw a full hue background (fillRect with gradient), overlay with linear gradients:
+  - Left to right: white to transparent to add 'saturation'
+  - Top to bottom: transparent to black to add 'value' shading
+- When hue updates, update canvas background fill
+
+3) Mouse/touch event handling
+- Pointerdown/pointermove/pointerup to track drag; compute local coordinates then convert to S,V (S x-axis, V y-axis) and update HSV
+- Update preview and code inputs in real time
+
+4) Hue control
+- Range input or custom slider: update H value; after change, redraw canvas
+
+5) Inputs & copy
+- Hook up the text inputs for hex/rgb/hsl/ etc; when changed, parse and update current color (HSV or RGB state)
+- Copy to clipboard by navigator.clipboard.writeText
+
+6) Palette/harmony calculations
+- For each harmony, compute set of H offsets and derive colors by keeping S and V
+- Display swatches and copy whole palette (comma-separated hex list) on click
+
+7) Extras
+- localStorage favorites & history
+- Add keyboard handlers
+
+Testing & QA
+- Cross-browser check (Safari, Chrome, Firefox)
+- Test touch input on mobile
+- Verify color conversions (e.g., #FF0000 -> rgb(255, 0, 0))
+- Verify WCAG contrast calculator
+
+Deployment (Vanilla)
+- Create a git repo; in GitHub, add new repo then:
+  - Push code and enable GitHub Pages from main branch / 'gh-pages' branch
+- Or use Netlify: drop the static folder, or link repo and set the build to none
+- Ensure the page shows your name or uniqname visibly
+
+----------------------------
+Implementation Guide: React
+----------------------------
+Scaffold
+- Use Vite (recommended) or Create React App
+  - Example: npm create vite@latest color-picker -- --template react
+
+Component breakdown
+- App
+  - Header (app title + uniqname)
+  - ColorPickerContainer (layout)
+    - ColorCanvas (canvas that renders S/V plane; accepts hue prop and emits pick events)
+    - HueSlider (vertical slider; emits hue changes)
+    - ColorPreview (large block showing current color, copy button)
+    - CodeInputs (editable inputs for HEX/RGB/HSL/HSV; update color when changed)
+    - Palettes (display color harmonies and copy or save buttons)
+    - ContrastChecker (WCAG info)
+    - Favorites (localStorage list)
+
+State management
+- Keep the single source of truth for current color (preferably HSV object {h,s,v} or an RGB object), in Context or top-level App with useState
+- Derived values (HEX/HSL/RGB) can be memoized via useMemo
+- Use useRef for canvas drawing context; useEffect to re-draw canvas on hue changes
+
+Event flow
+- Canvas emits coordinates converted to S/V and triggers update to color state
+- HueSlider updates hue state; ColorCanvas re-renders with new hue
+- Inputs parse typed values and update HSV/RGB state
+- Palettes computed via memoized selector from current H, S, V
+
+Canvas rendering tips
+- Use requestAnimationFrame when re-rendering canvas frequently
+- Avoid heavy redraws by updating only in `pointermove` with throttling
+
+Accessibility
+- Ensure all inputs and sliders are keyboard reachable
+- Use aria attributes for the canvas (role="application") and provide instructions
+- Build focus outlines for keyboard users
+
+Styling
+- Use CSS modules or Tailwind to keep styles scoped
+- Use CSS variables for theme toggling
+
+Testing
+- Unit test conversions in a `utils` module
+- Use React Testing Library for snapshot and event tests (e.g., drag events on canvas, slider changes)
+
+Deployment (React)
+- Build & deploy via Netlify or GitHub Pages
+  - Netlify automatic deploy after pushing to repo
+  - For GitHub Pages: configure `homepage` in package.json or use gh-pages package
+
+----------------------------
+Feature Checklist & Grading Criteria (to confirm before submission)
+- [ ] App includes your name/uniqname visibly on the page
+- [ ] The color picker allows the user to select a color by clicking/dragging a color plane
+- [ ] A hue slider exists and changes the color plane live
+- [ ] Color codes show in HEX, RGB, HSL (and optionally HSV/OKLCH) and fields are editable
+- [ ] The code fields support copy-to-clipboard
+- [ ] At least one palette/harmony suggestion is present and can be copied
+- [ ] There is a contrast/WCAG suggestion or badge
+- [ ] History or favorites are present and saved via localStorage (optional but recommended)
+- [ ] Accessible (keyboard operations, aria labels) and mobile-friendly
+- [ ] Both apps are deployed and public URLs are saved/submitted
+
+----------------------------
+Recommended Libraries & Resources
+- color conversion utilities: tinycolor2, chroma.js, or culori for OKLCH support
+- For React: Vite + React or CRA + Vite as the scaffold
+- For canvas helpers: implement simple custom rendering for the S/V plane; the logic is straightforward
+- WCAG contrast ratio: use math-based algorithm from W3 or `wcag-contrast` package
+
+----------------------------
+Deployment Steps (Quick)
+- GitHub Pages (Vanilla):
+  - git init; git add .; git commit -m "init"
+  - Create repo and push
+  - Settings -> Pages -> Serve from main (root)
+- Netlify (React):
+  - Push to GitHub
+  - Create a new site on Netlify, connect to the repo, select the main branch and the build command `npm run build`. Set publish directory to `dist` (Vite) or `build` (CRA)
+
+----------------------------
+Deliverable Notes
+- Both apps should be built specifically for this class as an assignment.
+- Include your uniqname in the header or footer so instructors can verify authorship.
+- Provide 2 URLs: one for Vanilla, one for React
+
+----------------------------
+Optional Developer Extras (if time)
+- Implement dark mode toggle and store preference in localStorage
+- Add eyedropper for images (via input type=file and canvas sampling)
+- Add export palette JSON
+- Add a 'lock' feature to pick multiple palette colors separately
+
+----------------------------
+Contact & Reference
+- Source: https://htmlcolorcodes.com/color-picker/ (for UI/UX reference)
+
+End of todo.txt
+
+----------------------------
+EXTENDED IMPLEMENTATION DETAILS
+----------------------------
+
+The following sections expand the details in `todo.txt` so Claude (or another developer)
+can implement the full-featured color picker in both Vanilla JS and React. This includes
+code-level algorithms, UI/UX specifics, test cases, accessibility details, optimization
+recommendations, and deployment guidance.
+
+1) Color Models & Conversions (practical reference)
+- RGB to HEX
+  - Each channel (r,g,b) is 0..255. Convert to hex with two digits.
+  - Example:
+    - hex = `'#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()`
+  - Or per-channel: `((r).toString(16).padStart(2,'0'))`.
+
+- HEX to RGB
+  - Remove `#`, parse `#RRGGBB` into three 2-character hex values.
+  - Example: `r = parseInt(hex.substring(1,3), 16)`.
+
+- RGB <-> HSV (useful for color plane and hue slider)
+  - HSV definition:
+    - h in 0..360, s in 0..1, v in 0..1
+  - RGB->HSV algorithm (pseudocode):
+    - r', g', b' = r/255, g/255, b/255
+    - max = max(r', g', b'), min = min(r', g', b')
+    - d = max - min
+    - v = max
+    - s = 0 if max == 0 else d / max
+    - if d == 0: h = 0
+      else if max == r': h = 60 * (((g' - b') / d) % 6)
+      else if max == g': h = 60 * (((b' - r') / d) + 2)
+      else h = 60 * (((r' - g') / d) + 4)
+    - if h < 0: h += 360
+  - HSV->RGB algorithm: use standard formula – compute chroma and adjust by hue region.
+
+- RGB <-> HSL
+  - HSL is used for tints and shades display and is useful for user display.
+  - Use standard algorithms: convert to 0..1, compute max/min/l, then compute saturation and hue.
+
+- Contrast & WCAG
+  - Relative luminance for sRGB (per W3 method) and contrast ratio:
+    - RsRGB = R/255 …
+    - R = if RsRGB <= 0.03928 then RsRGB/12.92 else ((RsRGB+0.055)/1.055) ^ 2.4
+    - Relative luminance (L) = 0.2126*R + 0.7152*G + 0.0722*B
+    - Contrast ratio = (L1 + 0.05) / (L2 + 0.05) where L1 >= L2.
+
+2) Canvas Rendering Algorithm (Detailed)
+- Canvas size & device pixel ratio: To render crisply on high-DPI devices, normalize canvas width/height by devicePixelRatio:
+  - canvas.width = cssWidth * devicePixelRatio
+  - canvas.height = cssHeight * devicePixelRatio
+  - scale ctx by devicePixelRatio
+
+- Color plane (Saturation vs Brightness/Value):
+  - Draw base hue background: fillRect with a rectangle set to the hue color at s=100%, v=100% (RGB derived from H, S=1, V=1)
+  - Overlay a left-to-right gradient from white -> transparent (for saturation) using ctx.createLinearGradient
+  - Overlay a top-to-bottom gradient from transparent -> black (for value) using ctx.createLinearGradient
+
+- Pointer logic:
+  - On pointerdown: capture pointerId, set capturing true; handle position
+  - On pointermove: if capturing: compute x,y local coords: s = x / width (clamp 0..1); v = 1 - y / height
+  - On pointerup/cancel: release
+  - For keyboard operation: provide control to nudge S/V in step (5% or 1%)
+
+- Performance tips:
+  - Only redraw on hue change. When picking S/V, do not re-render entire canvas; you only need to update the cursor marker.
+  - Throttle pointermove to 60fps (use requestAnimationFrame to schedule updates).
+
+3) UI Structure (Vanilla) — HTML/CSS examples
+- HTML (outline):
+  - <header>App title & uniqname</header>
+  - <main class="picker"> <div class="left"> <canvas id="sv-canvas"> + hue slider +</div> <aside>controls & palettes</aside> </main>
+  - <footer>deployment & credit</footer>
+
+- CSS structure suggestions:
+  - Use CSS custom properties for theme colors and spacing
+  - Use a grid with left column for picker and right column for controls
+  - For the hue slider: rotate an input range element or use custom vertical gradient element
+
+4) Detailed Vanilla JS Implementation steps & code snippets
+- File: `script.js` structure:
+  - top-level state: hue (float 0–360), s (0..1), v (0..1), rgba {r,g,b}
+  - utility module: conversions.js (rgb->hex, hex->rgb, rgb <-> hsv, rgb->hsl, contrast)
+  - init() sets up canvas, registers pointer listeners, sets up hue slider, code input listeners and saves to localStorage
+
+- Example: setting current color when user picks:
+  - function setHSV(h, s, v) { hue = h; saturation = s; value = v; rgb = hsvToRgb(h,s,v); updateUI(); }
+
+- Example: parsing user hex input and updating: parseHexInput(evt) { const hex = input.value.trim(); try parse; const rgb = hexToRgb(hex); const hsv = rgbToHsv(rgb); setHSV(hsv.h,hsv.s,hsv.v)}
+
+- Example: copy-to-clipboard helper:
+  - navigator.clipboard.writeText(text).then(()=>{ showToast('Copied!') }).catch(()=>{ fallback document.execCommand})
+
+5) Palettes & Harmonies (detailed)
+- Given base #R G B or H,S,V, compute harmonies by modifying H and optionally S & L.
+- Harmony formulas:
+  - Complementary: [H, (H + 180) % 360]
+  - Split complementary: [H, (H + 150) % 360, (H + 210) % 360]
+  - Triadic: [H, H+120, H+240]
+  - Analogous: [H-30, H, H+30]
+  - Tetradic: [H, H+60, H+180, H+240]
+  - Monochrome: variations in V or L only (compute by linear adjustments, clamp 0..1)
+
+6) Accessibility specifics
+- ARIA & focusable controls
+  - Add aria-label to canvas explaining "Click or drag to pick Saturation/Value".
+  - Provide `role="application"` for complex canvas interactions and `tabindex="0"` to accept keyboard focus.
+  - Provide an alternate set of inputs so keyboard-only users can enter hex or use arrow keys to change components.
+
+- Colorblindness & WCAG
+  - Provide an option to display color blindness simulation (e.g., use colorblind.js) - optional.
+  - Show contrast ratio against white/black and label as "Accessible for body text: PASS/FAIL" for AA/AAA standards.
+
+7) Testing & QA
+- Unit tests (Vanilla)
+  - Use Jest (node) with `jsdom` if feasible. Otherwise, write simple assertion files.
+  - Test conversion: Convert hex -> rgb -> hsv -> rgb -> hex and ensure idempotency for known colors.
+  - Test contrast algorithm with a few common pairs like black/white and typical colors.
+
+- Manual tests
+  - Test pointer events: Click & drag in canvas to pick all corners and center.
+  - Verify the hue slider changes and canvas re-renders.
+  - Test editing code fields and ensure the picker updates.
+  - Verify copy to clipboard works and fallback is present.
+  - Mobile testing: try touch event interactions.
+
+8) React: Deep Implementation Details
+- Folder scaffold (Vite):
+  - src/
+     - components/
+         - ColorCanvas.jsx
+         - HueSlider.jsx
+         - ColorPreview.jsx
+         - ColorCodeInputs.jsx
+         - PaletteList.jsx
+         - ContrastChecker.jsx
+     - utils/
+         - color.js (the conversions and helpers)
+     - App.jsx
+     - main.jsx
+  - public/
+  - index.html
+  - package.json
+
+- React component contract & behavior
+  - ColorCanvas
+    - Props: hue (number), onPick(h,s,v), width, height
+    - Use useRef for canvas; draw in useEffect when hue changes; use pointer events to capture pick events.
+    - Expose keyboard handlers for S/V with arrow keys when focused.
+
+  - HueSlider
+    - Accessible range input or custom slider
+    - Props: hue, onChange
+    - Draw tick marks and colored gradient background.
+
+  - ColorPreview
+    - Shows current color block and copy button; show hex & a small swatch for favorites.
+
+  - ColorCodeInputs
+    - Controlled inputs for each format; validation + parsing. Provide `onBlur` or `onEnter` to update.
+
+  - PaletteList
+    - Compute harmonies based on current H and display swatches.
+    - Provide a copy for the whole palette and single swatch copy.
+
+  - ContrastChecker
+    - Display white/black contrast, and sample text in that color to show readability.
+
+- React state & architecture
+  - Use top-level state (App.jsx) for color (HSV) maintained with `useState`.
+  - Use useContext only if passing state across deep components is needed.
+  - Derive rgb/hex/hsl using `useMemo(() => hsvToRgb(h,s,v), [h,s,v])`.
+
+- React code snippets
+  - Example: `hsvToRgb` & `rgbToHex` will live in `utils/color.js` and be imported by components.
+
+- Testing (React)
+  - Unit tests for utils.
+  - Integration tests using React Testing Library:
+    - Render ColorCanvas and simulate pointer events; verify onPick gets expected values.
+    - Render HueSlider and verify change events update the App state.
+
+9) Build, Deployment & CI
+- Vanilla GitHub Pages (egg):
+  - Create a repository with `index.html`, `style.css`, `script.js` and `assets`.
+  - Push to GitHub.
+  - Set GitHub Pages to serve from main branch root.
+  - Provide the URL: `https://<username>.github.io/<repo>/` (check deploy)
+
+- React Vite & Netlify / GitHub Pages:
+  - For Netlify, connect repo; set build command `npm run build` and publish dir `dist`.
+  - For GH Pages, use `gh-pages` package or configure GitHub Actions to build and push `build` to `gh-pages` branch.
+  - Example GH Pages: Add `homepage` in package.json, and `gh-pages` npm script: `gh-pages -d dist` (Vite uses `dist` by default)
+
+- Continuous Integration
+  - Add GitHub Actions to build the project and optionally deploy to Netlify.
+  - For UI smoke tests, run `npm test` and `npm run build` on PRs.
+
+10) Verification & Submission
+- Final checklist:
+  - Both sites are publicly deployed and accessible.
+  - Your name/uniqname is visible.
+  - Both apps have the interactive color picker implemented (for grading: one interactive behavior that demonstrates class concepts).
+  - There is a README in each repo explaining: how to run locally, how to deploy, and the features implemented.
+
+11) Example Milestones (for a Claude runbook)
+  - M1: Basic Canvas + Hue Slider (+ state & conversions)
+  - M2: Code inputs (HEX/RGB, parsing) and copying
+  - M3: Palette generation, favorites, localStorage
+  - M4: Accessibility & WCAG contrast checker
+  - M5: Styling, responsive, and mobile testing
+  - M6: Deploy to hosting + final QA
+
+12) Example code snippets for quick copy
+- Minimal sample function: rgbToHex & hexToRgb
+  - function rgbToHex(r,g,b) { return `#${[r,g,b].map(x => x.toString(16).padStart(2,'0')).join('').toUpperCase()}` }
+  - function hexToRgb(hex) { const h = hex.replace('#',''); return {r: parseInt(h.substr(0,2),16), g: parseInt(h.substr(2,2),16), b: parseInt(h.substr(4,2),16)} }
+
+- Minimal HSV->RGB implementation (JS - common approach):
+  - function hsvToRgb(h,s,v){ const c = v*s; const x = c*(1 - Math.abs((h/60)%2 - 1)); const m = v - c; let r,g,b; ... }
+
+13) Deliverables and grading evidence
+- Top-level README should include:
+  - Your uniqname and who the author is
+  - The URLs for both deployed apps and a short narrative of what differs between them
+  - How to run locally and tests to verify
+
+14) Final notes
+- If implementing OKLCH or perceptual color conversions, consider adding a small library (culori) to avoid complex math.
+- Keep everything attribution-friendly; if you copy code or snippets from public sources, include attribution in comments.
+
+----------------------------
+Updated by: automation/assistant - expanded `todo.txt` with deep technical guidance per user request
+
