@@ -1,0 +1,25 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Run Vanilla tests
+        run: |
+          cd vanilla-color-picker
+          node test-utils.js
+      - name: React install & test
+        run: |
+          cd react-color-picker
+          npm ci
+          npm run test

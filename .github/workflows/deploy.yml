@@ -1,0 +1,40 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Build React App
+        working-directory: react-color-picker
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build deployment directory
+        run: |
+          rm -rf gh-pages || true
+          mkdir -p gh-pages/vanilla-color-picker
+          mkdir -p gh-pages/react-color-picker
+          # Copy vanilla static files (keep directories structure)
+          cp -R vanilla-color-picker/* gh-pages/vanilla-color-picker/
+          # Copy production build of React to the folder
+          cp -R react-color-picker/dist/* gh-pages/react-color-picker/
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./gh-pages
+          publish_branch: gh-pages
